@@ -153,7 +153,9 @@ async function fetchAllEnabledFeeds(){
 // Start the polling timer using the interval specified by the user. If a timer is
 // already running it will be cleared before starting a new one.
 function startPolling(){
-  const minutes = parseInt(byId('pollInterval').value, 10);
+  // Read polling interval from the input defined in index.html.  The element
+  // id was updated to "pollIntervalMinutes" in the latest layout.
+  const minutes = parseInt(byId('pollIntervalMinutes').value, 10);
   if(isNaN(minutes) || minutes < 1) return;
   // Immediately fetch once to populate the feed.
   fetchAllEnabledFeeds();
@@ -192,8 +194,10 @@ async function initFeedManagement(){
   });
   renderFeedCheckboxes();
   // Attach event handlers for polling controls
-  const fetchFeedsNowBtn = byId('fetchFeedsNowBtn');
-  if(fetchFeedsNowBtn) fetchFeedsNowBtn.addEventListener('click', fetchAllEnabledFeeds);
+  // Button to fetch feeds immediately.  The id corresponds to the
+  // "Fetch Feeds Now" button defined in index.html.
+  const fetchFeedsBtn = byId('fetchFeedsBtn');
+  if(fetchFeedsBtn) fetchFeedsBtn.addEventListener('click', fetchAllEnabledFeeds);
   const startPollingBtn = byId('startPollingBtn');
   if(startPollingBtn) startPollingBtn.addEventListener('click', startPolling);
   const stopPollingBtn = byId('stopPollingBtn');
