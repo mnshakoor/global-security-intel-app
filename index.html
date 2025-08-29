@@ -49,7 +49,6 @@
   <!-- Icons -->
   <link rel="icon" href="assets/qa.ico" />
 
-  <!-- Use the root-level stylesheet for the updated build -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="light">
@@ -99,7 +98,6 @@
           <button id="ingestRawJsonBtn" class="btn btn-small">Ingest JSON</button>
         </div>
 
-        <!-- RSS polling controls: interval, manual fetch, start and stop polling, and enabled feed list -->
         <div class="ingest-block">
           <label>Feed polling interval (minutes)</label>
           <input id="pollInterval" type="number" min="1" value="15" />
@@ -130,7 +128,8 @@
 
         <div class="row">
           <label>Country</label>
-          <select id="countrySelect" multiple>
+          <!-- Country filter. Use size attribute to show multiple options at once -->
+          <select id="countrySelect" multiple size="8">
             <option value="">All</option>
           </select>
           <small>Hold Ctrl or Cmd to select multiple</small>
@@ -168,7 +167,7 @@
           <label>Base map</label>
           <select id="basemapSelect">
             <option value="osm">OpenStreetMap</option>
-            <option value="sat">Satellite</option>
+            <option value="sat" selected>Satellite</option>
             <option value="terrain">Terrain</option>
           </select>
         </div>
@@ -283,7 +282,6 @@
     </div>
   </footer>
 
-  <!-- Load the application script (no module) from the project root -->
   <script src="app.js"></script>
 </body>
 </html>
