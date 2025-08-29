@@ -65,29 +65,38 @@ body{
  * map-and-right container uses a vertical layout with two rows.  The
  * map occupies the top row while the rightbar scrolls in the bottom.
  */
+/*
+ * Arrange the map above the panels using a flexible column layout.
+ * The map occupies a fixed portion of the viewport height and the
+ * right-hand panels scroll independently beneath it.  This prevents
+ * the map from pushing other panels out of view.
+ */
 .map-and-right{
-  display:grid;
-  grid-template-rows:55% 45%;
-  grid-template-columns:1fr;
+  display:flex;
+  flex-direction:column;
   height:100%;
 }
 
-/* The map spans the first row and fills available space */
+/* Allocate roughly 45% of the viewport height to the map.  Because
+ * Leaflet maps require a fixed height, we set flex-basis with a vh
+ * unit.  The map will not grow beyond this height, ensuring the
+ * rightbar always remains visible.  */
 #map{
-  height:100%;
+  flex:0 0 45vh;
   width:100%;
+  height:45vh;
 }
 
-/* The rightbar occupies the second row.  Remove the left border and
- * instead draw a top border to separate it from the map.  Allow it to
- * scroll independently of the map.  */
+/* The rightbar fills the remaining space.  It scrolls vertically and
+ * has a top border separating it from the map.  */
 .rightbar{
+  flex:1;
+  overflow-y:auto;
   border-left:none;
   border-top:1px solid var(--border);
   display:flex;
   flex-direction:column;
   background:var(--panel);
-  overflow-y:auto;
 }
 .tabs{display:flex;border-bottom:1px solid var(--border)}
 .tab{flex:1;padding:10px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-weight:700}

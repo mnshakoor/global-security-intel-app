@@ -104,6 +104,59 @@ function findCountryInString(str){
   return null;
 }
 
+// A simple heuristic to derive a reasonable category and severity from
+// the combination of a feed item's title, description, and explicit
+// category tag.  If the RSS feed does not specify a category or
+// severity, we examine keywords to assign a category and severity
+// ranging from 1 (lowest) to 5 (highest).  This helps avoid all
+// events defaulting to S2.  Feel free to expand these mappings
+// depending on your operational needs.
+function deriveCategoryAndSeverity(title, desc, categoryTag){
+  const text = `${title} ${desc} ${categoryTag}`.toLowerCase();
+  let category = categoryTag || '';
+  let severity = 2;
+  // Very severe security incidents (bombings, massacres, attacks)
+  if(/\b(explosion|bomb|car\s*bomb|suicide attack|massacre|airstrike|air strike|rocket|terrorist attack|ambush|mass killing)\b/.test(text)){
+    severity = 5;
+    if(!category) category = 'Security';
+  }
+  // General armed conflict and clashes
+  else if(/\b(attack|strike|clash|fighting|shooting|assault|militant|shelling)\b/.test(text)){
+    severity = 4;
+    if(!category) category = 'Security';
+  }
+  // Civil unrest, protests and demonstrations
+  else if(/\b(protest|demonstration|riot|civil unrest|protester|march|rally)\b/.test(text)){
+    severity = 3;
+    if(!category) category = 'Civil Unrest';
+  }
+  // Natural hazards and severe weather
+  else if(/\b(flood|storm|hurricane|cyclone|typhoon|earthquake|tsunami|drought|heatwave|wildfire|volcano)\b/.test(text)){
+    severity = 3;
+    if(!category) category = 'Natural Hazard';
+  }
+  // Health crises and disease outbreaks
+  else if(/\b(cholera|ebola|disease outbreak|pandemic|epidemic|virus|malaria|measles|influenza)\b/.test(text)){
+    severity = 3;
+    if(!category) category = 'Health';
+  }
+  // Infrastructure/transport disruptions (power, roads)
+  else if(/\b(power outage|blackout|roadblock|road block|transport disruption|rail|airport|seaport|infrastructure)\b/.test(text)){
+    severity = 2;
+    if(!category) category = 'Infrastructure';
+  }
+  // Humanitarian and complex emergencies
+  else if(/\b(complex emergency|humanitarian crisis|refugee|famine|food insecurity|aid)\b/.test(text)){
+    severity = 3;
+    if(!category) category = 'Humanitarian';
+  }
+  // If no category tag is provided, assign a generic category
+  if(!category){
+    category = 'RSS';
+  }
+  return { category, severity };
+}
+
 // Stores feed definitions and polling timer state. Each feed has an id, url and
 // enabled flag. A separate timer handles periodic polling. These properties
 // will be attached to the State object after its declaration (see below).
@@ -758,11 +811,15 @@ async function fetchFeed(url){
       const match = findCountryInString(title + ' ' + desc);
       if(match) country = match;
     }
+    // Derive a sensible category and severity based on the title,
+    // description and any explicit category tag. This prevents all
+    // RSS items from defaulting to severity 2.
+    const { category: finalCategory, severity: finalSeverity } = deriveCategoryAndSeverity(title, desc, category);
     events.push({
       id: `rss-${Date.now()}-${Math.floor(Math.random()*100000)}-${idx}`,
       title,
-      category: category || 'RSS',
-      severity: 2,
+      category: finalCategory,
+      severity: finalSeverity,
       lat,
       lon,
       country: country || '',
