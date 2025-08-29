@@ -5,8 +5,13 @@
 // parse coordinates and detect country names from RSS titles and descriptions.
 
 // CORS proxy used to fetch RSS feeds. Many RSS endpoints do not support CORS, so we
-// route requests through the allorigins proxy to avoid browser restrictions.
-const FEED_PROXY_PREFIX = 'https://api.allorigins.win/raw?url=';
+// route requests through a proxy to avoid browser restrictions.  The previous
+// implementation used api.allorigins.win/raw but that service frequently returns
+// 403 Forbidden responses.  We now use corsproxy.io, which accepts requests in
+// the format: https://corsproxy.io/?<encoded target URL>.  If this service
+// becomes unavailable, you can replace this constant with another proxy of
+// choice (e.g. https://cors.isomorphic-git.org/ or your own CORS worker).
+const FEED_PROXY_PREFIX = 'https://corsproxy.io/?';
 
 // Approximate latitude/longitude for a subset of countries. When RSS items do not
 // provide explicit geolocation data, we attempt to assign coordinates based on
