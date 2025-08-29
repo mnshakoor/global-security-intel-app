@@ -49,7 +49,7 @@
   <!-- Icons -->
   <link rel="icon" href="assets/qa.ico" />
 
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body class="light">
   <header class="app-header">
@@ -99,9 +99,15 @@
         </div>
 
         <div class="ingest-block">
-          <button id="loadSamplesBtn" class="btn btn-secondary">Load Sample Data</button>
-          <button id="simulateFeedBtn" class="btn btn-secondary">Start Simulated Feed</button>
-          <span id="simStatus" class="status"></span>
+          <label>Feed polling interval (minutes)</label>
+          <input id="pollIntervalMinutes" type="number" min="1" max="1440" value="30" />
+          <label>Enabled feeds</label>
+          <!-- This container will be populated with a checkbox for each RSS feed defined in global_security_rss_feeds.txt -->
+          <div id="feedCheckboxes" class="feed-list"></div>
+          <button id="fetchFeedsBtn" class="btn btn-small">Fetch Feeds Now</button>
+          <button id="startPollingBtn" class="btn btn-small">Start Polling</button>
+          <button id="stopPollingBtn" class="btn btn-small">Stop Polling</button>
+          <span id="pollingStatus" class="status"></span>
         </div>
       </section>
 
@@ -275,6 +281,7 @@
     </div>
   </footer>
 
-  <script src="js/app.js" type="module"></script>
+  <!-- Load the application script from the root directory. Do not use a module here because the script is not transpiled. -->
+  <script src="app.js"></script>
 </body>
 </html>
