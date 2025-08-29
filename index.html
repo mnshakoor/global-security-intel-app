@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quanta Analytica - Global Security Intel Pro</title>
+  <meta name="description" content="The one platform for critical event management and global security monitoring" />
+
+  <!-- Leaflet core -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin="anonymous"
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin="anonymous"
+  ></script>
+
+  <!-- MarkerCluster -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <!-- Leaflet.draw -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"
+  />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <!-- PapaParse for CSV ingestion -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <!-- FileSaver for exports -->
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+  <!-- Icons -->
+  <link rel="icon" href="assets/qa.ico" />
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="light">
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo">QA</div>
+      <div>
+        <h1>Global Security Intel Pro</h1>
+        <p>The one platform for critical event management and global security monitoring</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button id="themeToggle" class="btn">Toggle Theme</button>
+      <button id="saveStateBtn" class="btn">Save State</button>
+      <button id="loadStateBtn" class="btn">Load State</button>
+      <button id="exportConfigBtn" class="btn btn-secondary">Export Config</button>
+      <a class="btn btn-secondary" href="README.html" target="_blank">About & Docs</a>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <section class="panel">
+        <h2>Ingest Data</h2>
+
+        <div class="ingest-block">
+          <label>Upload JSON (events, assets, people)</label>
+          <input id="jsonFileInput" type="file" accept=".json" />
+        </div>
+
+        <div class="ingest-block">
+          <label>Upload CSV (events)</label>
+          <input id="csvFileInput" type="file" accept=".csv" />
+          <details>
+            <summary>CSV schema</summary>
+            <small>Required columns: id,title,category,severity,lat,lon,country,source,link,timestamp</small>
+          </details>
+        </div>
+
+        <div class="ingest-block">
+          <label>RSS or JSON feed URL</label>
+          <input id="feedUrl" type="url" placeholder="https://example.com/feed.rss or .json" />
+          <button id="fetchFeedBtn" class="btn btn-small">Fetch Feed</button>
+          <small>Note: Some feeds require a CORS proxy. You can use a proxy or paste JSON directly below.</small>
+          <textarea id="rawJsonInput" placeholder="Paste raw JSON array of events here then click Ingest JSON"></textarea>
+          <button id="ingestRawJsonBtn" class="btn btn-small">Ingest JSON</button>
+        </div>
+
+        <div class="ingest-block">
+          <button id="loadSamplesBtn" class="btn btn-secondary">Load Sample Data</button>
+          <button id="simulateFeedBtn" class="btn btn-secondary">Start Simulated Feed</button>
+          <span id="simStatus" class="status"></span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Filters</h2>
+        <div class="row">
+          <label>Severity</label>
+          <input id="severityMin" type="range" min="1" max="5" value="1" />
+          <div class="range-labels">
+            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>Keyword</label>
+          <input id="keywordInput" type="text" placeholder="e.g., protest OR flood" />
+        </div>
+
+        <div class="row">
+          <label>Country</label>
+          <select id="countrySelect" multiple>
+            <option value="">All</option>
+          </select>
+          <small>Hold Ctrl or Cmd to select multiple</small>
+        </div>
+
+        <div class="row">
+          <label>Time Window (hours)</label>
+          <input id="timeWindow" type="number" min="1" max="168" value="72" />
+        </div>
+
+        <div class="row">
+          <button id="applyFiltersBtn" class="btn">Apply Filters</button>
+          <button id="resetFiltersBtn" class="btn btn-secondary">Reset</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Roles</h2>
+        <select id="roleSelect">
+          <option value="all">All</option>
+          <option value="cso">Chief Security Officer</option>
+          <option value="intel">Intelligence Analyst</option>
+          <option value="ngo">NGO Security Risk Manager</option>
+          <option value="ops">Operations</option>
+          <option value="exec">Executive Security</option>
+          <option value="legal">Legal</option>
+          <option value="bc">Business Continuity</option>
+        </select>
+        <small>Role selection hides and shows relevant panels</small>
+      </section>
+
+      <section class="panel">
+        <h2>Map Designer</h2>
+        <div class="row">
+          <label>Base map</label>
+          <select id="basemapSelect">
+            <option value="osm">OpenStreetMap</option>
+            <option value="sat">Satellite</option>
+            <option value="terrain">Terrain</option>
+          </select>
+        </div>
+        <div class="row">
+          <label><input type="checkbox" id="toggleAssets" checked /> Show Assets</label>
+        </div>
+        <div class="row">
+          <label><input type="checkbox" id="togglePeople" checked /> Show People</label>
+        </div>
+        <div class="row">
+          <label><input type="checkbox" id="toggleEvents" checked /> Show Events</label>
+        </div>
+        <div class="row">
+          <button id="clearDrawingsBtn" class="btn btn-small">Clear Annotations</button>
+        </div>
+      </section>
+    </aside>
+
+    <section class="map-and-right">
+      <div id="map"></div>
+
+      <section class="rightbar">
+        <div class="tabs">
+          <button data-tab="feed" class="tab active">Live Feed</button>
+          <button data-tab="incidents" class="tab">Incidents</button>
+          <button data-tab="comms" class="tab">Comms</button>
+          <button data-tab="analytics" class="tab">Analytics</button>
+          <button data-tab="sop" class="tab">SOPs</button>
+        </div>
+
+        <div class="tab-panels">
+          <div id="panel-feed" class="panel-body active">
+            <div class="panel-controls">
+              <input id="feedSearch" type="text" placeholder="Search feed" />
+              <button id="exportFeedCsv" class="btn btn-small">Export CSV</button>
+              <button id="exportFeedJson" class="btn btn-small">Export JSON</button>
+            </div>
+            <ul id="feedList" class="feed-list"></ul>
+          </div>
+
+          <div id="panel-incidents" class="panel-body">
+            <form id="incidentForm" class="incident-form">
+              <h3>Create Incident</h3>
+              <input id="incTitle" type="text" placeholder="Incident title" required />
+              <select id="incSeverity">
+                <option value="1">Severity 1</option>
+                <option value="2">Severity 2</option>
+                <option value="3" selected>Severity 3</option>
+                <option value="4">Severity 4</option>
+                <option value="5">Severity 5</option>
+              </select>
+              <select id="incStatus">
+                <option value="open">Open</option>
+                <option value="escalated">Escalated</option>
+                <option value="resolved">Resolved</option>
+              </select>
+              <textarea id="incNotes" placeholder="Notes"></textarea>
+              <button class="btn" type="submit">Add Incident</button>
+              <button id="exportIncidents" class="btn btn-secondary" type="button">Export Incidents</button>
+            </form>
+            <ul id="incidentList" class="incident-list"></ul>
+          </div>
+
+          <div id="panel-comms" class="panel-body">
+            <h3>Two-way Communications</h3>
+            <div class="row">
+              <label>Channel</label>
+              <select id="commsChannel">
+                <option>Email</option>
+                <option>SMS</option>
+                <option>Slack</option>
+                <option>Teams</option>
+                <option>WhatsApp</option>
+                <option>In-app</option>
+              </select>
+            </div>
+            <div class="row">
+              <input id="commsRecipients" type="text" placeholder="Recipients or group" />
+            </div>
+            <div class="row">
+              <textarea id="commsMessage" placeholder="Message text"></textarea>
+            </div>
+            <button id="sendComms" class="btn">Send</button>
+            <div class="comms-log" id="commsLog"></div>
+          </div>
+
+          <div id="panel-analytics" class="panel-body">
+            <div class="charts">
+              <canvas id="severityChart"></canvas>
+              <canvas id="countryChart"></canvas>
+            </div>
+          </div>
+
+          <div id="panel-sop" class="panel-body">
+            <h3>Protocols and SOPs</h3>
+            <textarea id="sopText" placeholder="Paste protocol markdown here"></textarea>
+            <button id="saveSopBtn" class="btn btn-small">Save SOP</button>
+            <button id="exportSopBtn" class="btn btn-small">Export SOP</button>
+            <ul id="sopList" class="sop-list"></ul>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div>
+      <strong>Common Operating Picture:</strong> plot risk intelligence for people and assets globally. Use radius, lasso, or geo-boundaries for rapid selection.
+    </div>
+    <div>
+      <span id="statusText">Ready</span>
+    </div>
+  </footer>
+
+  <script src="js/app.js" type="module"></script>
+</body>
+</html>
