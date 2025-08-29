@@ -4,8 +4,12 @@
   --panel:#ffffff;
   --text:#131722;
   --muted:#6b7280;
-  --accent:#2563eb;
-  --accent-2:#06b6d4;
+  /* Updated brand colors to match Quanta Analytica (#134326).  The
+   * secondary accent is a slightly lighter shade for gradients and
+   * interactive elements.  Feel free to adjust these values for better
+   * contrast across light and dark themes. */
+  --accent:#134326;
+  --accent-2:#1f5a3a;
   --ok:#10b981;
   --warn:#f59e0b;
   --danger:#ef4444;
@@ -16,8 +20,10 @@ body.dark{
   --panel:#121621;
   --text:#e6e8ee;
   --muted:#9aa3b2;
-  --accent:#3b82f6;
-  --accent-2:#22d3ee;
+  /* Dark mode brand colors: mirror the light theme accent but slightly
+   * brighter to maintain contrast on dark backgrounds. */
+  --accent:#134326;
+  --accent-2:#1f5a3a;
   --ok:#34d399;
   --warn:#fbbf24;
   --danger:#f87171;
@@ -42,9 +48,24 @@ body{
   z-index:10;
 }
 .brand{display:flex;gap:12px;align-items:center}
+/* The logo container now displays an image.  Remove the gradient and
+ * apply a border radius.  The image itself will fill the container. */
 .logo{
-  width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  display:grid;place-items:center;color:white;font-weight:700;
+  width:40px;
+  height:40px;
+  border-radius:10px;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* Ensure the logo image fits the container without stretching */
+.logo img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
 }
 .brand h1{margin:0;font-size:18px}
 .brand p{margin:0;color:var(--muted);font-size:12px}
@@ -139,9 +160,21 @@ textarea{width:100%;min-height:90px;padding:8px;border:1px solid var(--border);b
 .sop-list{list-style:none;padding:0;margin:10px 0;display:flex;flex-direction:column;gap:8px}
 .sop-item{border:1px solid var(--border);border-radius:10px;padding:8px;background:rgba(0,0,0,.02)}
 
+/* Make the footer stick to the bottom of the viewport so it does not
+ * float midway through the content when the feed list is long.  We use
+ * position: sticky so it remains at the bottom of the scrollable
+ * viewport without covering other content. */
 .app-footer{
-  padding:10px 16px;border-top:1px solid var(--border);background:var(--panel);
-  display:flex;justify-content:space-between;align-items:center;font-size:12px
+  padding:10px 16px;
+  border-top:1px solid var(--border);
+  background:var(--panel);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:12px;
+  position:sticky;
+  bottom:0;
+  z-index:9;
 }
 
 .status{margin-left:8px;font-size:12px;color:var(--ok)}
