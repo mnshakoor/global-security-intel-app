@@ -1,8 +1,6 @@
 # global-security-intel-app
 Global Security OSINT Application
 
-Here is a professional `README.md` you can place in your GitHub repo to explain and support your app deployment:
-
 ---
 
 ## 🛰️ Global Security Intel Pro
