@@ -49,6 +49,7 @@
   <!-- Icons -->
   <link rel="icon" href="assets/qa.ico" />
 
+  <!-- Use root-level stylesheet -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="light">
@@ -98,16 +99,18 @@
           <button id="ingestRawJsonBtn" class="btn btn-small">Ingest JSON</button>
         </div>
 
+        <!-- Feed polling controls: removed sample data buttons and simulation.  Users can define a polling
+             interval and manage which feeds are enabled. -->
         <div class="ingest-block">
           <label>Feed polling interval (minutes)</label>
-          <input id="pollInterval" type="number" min="1" value="15" />
+          <input id="pollInterval" type="number" min="1" value="60" />
           <div class="row">
             <button id="fetchFeedsNowBtn" class="btn btn-small">Fetch Feeds Now</button>
             <button id="startPollingBtn" class="btn btn-small">Start Polling</button>
             <button id="stopPollingBtn" class="btn btn-small">Stop Polling</button>
           </div>
-          <label>Enabled feeds</label>
-          <div id="feedCheckboxes" class="feed-checkboxes" style="max-height:180px; overflow-y:auto; border:1px solid var(--border); padding:4px;"></div>
+          <h3>Enabled feeds</h3>
+          <div id="feedCheckboxes" class="feed-checkboxes"></div>
         </div>
       </section>
 
@@ -128,8 +131,7 @@
 
         <div class="row">
           <label>Country</label>
-          <!-- Country filter. Use size attribute to show multiple options at once -->
-          <select id="countrySelect" multiple size="8">
+          <select id="countrySelect" multiple>
             <option value="">All</option>
           </select>
           <small>Hold Ctrl or Cmd to select multiple</small>
@@ -167,7 +169,7 @@
           <label>Base map</label>
           <select id="basemapSelect">
             <option value="osm">OpenStreetMap</option>
-            <option value="sat" selected>Satellite</option>
+            <option value="sat">Satellite</option>
             <option value="terrain">Terrain</option>
           </select>
         </div>
@@ -282,7 +284,7 @@
     </div>
   </footer>
 
-  <!-- Load the main application script.  No type="module" is used so that it can run as a normal script -->
+  <!-- Load the application script without module type so it runs under file:// and on GitHub Pages -->
   <script src="app.js"></script>
 </body>
 </html>

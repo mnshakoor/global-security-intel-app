@@ -106,31 +106,39 @@ textarea{width:100%;min-height:90px;padding:8px;border:1px solid var(--border);b
 .sop-list{list-style:none;padding:0;margin:10px 0;display:flex;flex-direction:column;gap:8px}
 .sop-item{border:1px solid var(--border);border-radius:10px;padding:8px;background:rgba(0,0,0,.02)}
 
+.app-footer{
+  padding:10px 16px;border-top:1px solid var(--border);background:var(--panel);
+  display:flex;justify-content:space-between;align-items:center;font-size:12px
+}
+
 /*
- * Custom styling for the country multi-select dropdown.  The default browser
- * rendering of a multi-select can be difficult to read on dark backgrounds
- * because of the native styling.  These rules normalize the appearance and
- * ensure good contrast in both light and dark themes.  We also increase
- * the height so multiple options are visible without scrolling.
+ * Additional styles for multi-select and feed list.  The country select box is
+ * enlarged for better visibility and scrollable when there are many options.
+ * The feed checkbox container is scrollable to accommodate dozens of feeds.
  */
 #countrySelect{
   width:100%;
   min-height:120px;
-  padding:8px;
+  padding:6px;
   border:1px solid var(--border);
-  border-radius:10px;
+  border-radius:8px;
   background:var(--panel);
   color:var(--text);
 }
-#countrySelect option{
+.feed-checkboxes{
+  max-height:150px;
+  overflow-y:auto;
+  border:1px solid var(--border);
+  border-radius:8px;
   padding:4px;
   background:var(--panel);
   color:var(--text);
 }
-
-.app-footer{
-  padding:10px 16px;border-top:1px solid var(--border);background:var(--panel);
-  display:flex;justify-content:space-between;align-items:center;font-size:12px
+.feed-row{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  margin-bottom:4px;
 }
 
 .status{margin-left:8px;font-size:12px;color:var(--ok)}

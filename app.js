@@ -1,52 +1,204 @@
-// Removed sample data import.  This app no longer uses simulated sample data.
-// Define monitored countries list here; you can populate this if you want to restrict
-// the country dropdown to a predefined set.  Leave empty to derive from data.
-const MONITORED_COUNTRIES = [];
-// List of RSS/JSON feeds to pull live event data from.  Each entry will be shown
-// as an enabled feed in the UI.  Users can toggle feeds on/off and set polling.
-const FEED_URLS = [
-  "https://www.thenewhumanitarian.org/rss/all.xml",
-  "https://theconversation.com/africa/articles.atom",
-  "https://reliefweb.int/updates/rss.xml?advanced-search=%28C231_C75_C220_C149_C46_C49_C102_C69_C55_C164_C216_C174_C36_C208_C54_C87_C175%29",
-  "https://www.crisisgroup.org/rss/1",
-  "https://news.un.org/feed/subscribe/en/news/region/africa/feed/rss.xml",
-  "https://www.rand.org/pubs/articles.xml",
-  "https://www.msf.org/rss/all",
-  "https://www.africom.mil/syndication-feed/rss/press-releases",
-  "https://travel.state.gov/_res/rss/TAsTWs.xml",
-  "https://www.rusi.org/rss/latest-publications.xml",
-  "https://www.nato.int/cps/rss/en/natohq/rssFeed.xsl/rssFeed.xml",
-  "https://www.bellingcat.com/feed/",
-  "https://www.icij.org/feed/",
-  "https://reliefweb.int/updates/rss.xml",
-  "https://www.unodc.org/unodc/feed/stories.xml",
-  "https://www.gdacs.org/xml/rss.xml",
-  "https://www.unodc.org/unodc/feed/press-releases.xml",
-  "https://reliefweb.int/updates/rss.xml?view=headlines",
-  "https://www.unodc.org/unodc/feed/publications.xml",
-  "https://www.chathamhouse.org/path/news-releases.xml",
-  "https://www.cisa.gov/cybersecurity-advisories/all.xml",
-  "https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=2&Site=945&max=10",
-  "https://www.google.com/alerts/feeds/09678322071861326813/15478561615984895730",
-  "https://www.google.com/alerts/feeds/09678322071861326813/17729077320378208369",
-  "https://www.google.com/alerts/feeds/09678322071861326813/10382831314055122160",
-  "https://www.google.com/alerts/feeds/09678322071861326813/3724071121715750608",
-  "https://www.google.com/alerts/feeds/09678322071861326813/16059299224477972089",
-  "https://www.google.com/alerts/feeds/09678322071861326813/1198605801377290022",
-  "https://www.google.com/alerts/feeds/09678322071861326813/3174126178415816884",
-  "https://www.google.com/alerts/feeds/09678322071861326813/10778257038356429766",
-  "https://www.google.com/alerts/feeds/09678322071861326813/13907740799062403631",
-  "https://www.google.com/alerts/feeds/09678322071861326813/13583311032613923135",
-  "https://www.google.com/alerts/feeds/09678322071861326813/3377241513725216927",
-  "https://www.google.com/alerts/feeds/09678322071861326813/15536018237517902097",
-  "https://www.google.com/alerts/feeds/09678322071861326813/6761969864493492596",
-  "https://www.google.com/alerts/feeds/09678322071861326813/8525308065649173498",
-  "https://www.google.com/alerts/feeds/09678322071861326813/9404830783107472102",
-  "https://www.google.com/alerts/feeds/09678322071861326813/15223369397218074172",
-  "https://www.google.com/alerts/feeds/09678322071861326813/13089685840883809940",
-  "https://www.google.com/alerts/feeds/09678322071861326813/6461275839714976954",
-  "https://www.google.com/alerts/feeds/09678322071861326813/1777354198294681489"
-];
+// The original version of this application imported sample data and a list of monitored
+// countries from data_samples.js. For the live feed-only version we remove this import
+// entirely. Instead, we define a list of country coordinates and derive the list of
+// monitored countries from it. We also define a CORS proxy prefix and functions to
+// parse coordinates and detect country names from RSS titles and descriptions.
+
+// CORS proxy used to fetch RSS feeds. Many RSS endpoints do not support CORS, so we
+// route requests through the allorigins proxy to avoid browser restrictions.
+const FEED_PROXY_PREFIX = 'https://api.allorigins.win/raw?url=';
+
+// Approximate latitude/longitude for a subset of countries. When RSS items do not
+// provide explicit geolocation data, we attempt to assign coordinates based on
+// country names appearing in the title or description. Countries not in this list
+// will use (0,0) as a fallback and may appear off the west coast of Africa.
+const COUNTRY_COORDS = {
+  "Algeria": { lat: 28.0339, lon: 1.6596 },
+  "Angola": { lat: -11.2027, lon: 17.8739 },
+  "Benin": { lat: 9.3077, lon: 2.3158 },
+  "Botswana": { lat: -22.3285, lon: 24.6849 },
+  "Burkina Faso": { lat: 12.2383, lon: -1.5616 },
+  "Burundi": { lat: -3.3731, lon: 29.9189 },
+  "Cameroon": { lat: 7.3697, lon: 12.3547 },
+  "Central African Republic": { lat: 6.6111, lon: 20.9394 },
+  "Chad": { lat: 15.4542, lon: 18.7322 },
+  "Democratic Republic of the Congo": { lat: -4.0383, lon: 21.7587 },
+  "Republic of the Congo": { lat: -0.2280, lon: 15.8277 },
+  "Cote d'Ivoire": { lat: 7.5400, lon: -5.5471 },
+  "Djibouti": { lat: 11.8251, lon: 42.5903 },
+  "Egypt": { lat: 26.8206, lon: 30.8025 },
+  "Eritrea": { lat: 15.1794, lon: 39.7823 },
+  "Eswatini": { lat: -26.5225, lon: 31.4659 },
+  "Ethiopia": { lat: 9.1450, lon: 40.4897 },
+  "Gabon": { lat: -0.8037, lon: 11.6094 },
+  "Gambia": { lat: 13.4432, lon: -15.3101 },
+  "Ghana": { lat: 7.9465, lon: -1.0232 },
+  "Guinea": { lat: 9.9456, lon: -9.6966 },
+  "Guinea-Bissau": { lat: 11.8037, lon: -15.1804 },
+  "Kenya": { lat: -0.0236, lon: 37.9062 },
+  "Lesotho": { lat: -29.6099, lon: 28.2336 },
+  "Liberia": { lat: 6.4281, lon: -9.4295 },
+  "Libya": { lat: 26.3351, lon: 17.2283 },
+  "Madagascar": { lat: -18.7669, lon: 46.8691 },
+  "Malawi": { lat: -13.2543, lon: 34.3015 },
+  "Mali": { lat: 17.5707, lon: -3.9962 },
+  "Mauritania": { lat: 21.0079, lon: -10.9408 },
+  "Morocco": { lat: 31.7917, lon: -7.0926 },
+  "Mozambique": { lat: -18.6657, lon: 35.5296 },
+  "Namibia": { lat: -22.9576, lon: 18.4904 },
+  "Niger": { lat: 17.6078, lon: 8.0817 },
+  "Nigeria": { lat: 9.0820, lon: 8.6753 },
+  "Rwanda": { lat: -1.9403, lon: 29.8739 },
+  "Senegal": { lat: 14.4974, lon: -14.4524 },
+  "Sierra Leone": { lat: 8.4606, lon: -11.7799 },
+  "Somalia": { lat: 5.1521, lon: 46.1996 },
+  "South Africa": { lat: -30.5595, lon: 22.9375 },
+  "South Sudan": { lat: 7.3090, lon: 30.6550 },
+  "Sudan": { lat: 12.8628, lon: 30.2176 },
+  "Tanzania": { lat: -6.3690, lon: 34.8888 },
+  "Togo": { lat: 8.6195, lon: 0.8248 },
+  "Tunisia": { lat: 33.8869, lon: 9.5375 },
+  "Uganda": { lat: 1.3733, lon: 32.2903 },
+  "Zambia": { lat: -13.1339, lon: 27.8493 },
+  "Zimbabwe": { lat: -19.0154, lon: 29.1549 }
+};
+
+// Derive the list of monitored countries from the keys of COUNTRY_COORDS. The country
+// select will be populated from this list together with countries present in data.
+const MONITORED_COUNTRIES = Object.keys(COUNTRY_COORDS);
+
+// Attempt to parse a latitude/longitude pair from a free-text string. Many news
+// articles embed coordinates in parentheses, brackets, or plain text. This function
+// returns a tuple [lat, lon] or null if no valid pair is found.
+function parseLatLonFromString(str){
+  if(!str) return null;
+  // Match patterns like "12.34 N, 56.78 E" or "12.34,56.78"
+  const regex = /([-+]?\d{1,2}\.\d{1,6})[^\d]*([-+]?\d{1,3}\.\d{1,6})/;
+  const m = str.match(regex);
+  if(m){
+    const lat = parseFloat(m[1]);
+    const lon = parseFloat(m[2]);
+    if(!Number.isNaN(lat) && !Number.isNaN(lon)){
+      return [lat, lon];
+    }
+  }
+  return null;
+}
+
+// Search a string for a country name in the COUNTRY_COORDS dictionary. Returns the
+// matching country name or null if no match is found. Performs a simple case-
+// insensitive substring search.
+function findCountryInString(str){
+  if(!str) return null;
+  const lower = str.toLowerCase();
+  for(const name of Object.keys(COUNTRY_COORDS)){
+    if(lower.includes(name.toLowerCase())){
+      return name;
+    }
+  }
+  return null;
+}
+
+// Stores feed definitions and polling timer state. Each feed has an id, url and
+// enabled flag. A separate timer handles periodic polling. These properties
+// will be attached to the State object after its declaration (see below).
+
+// Load the list of feed URLs from a text file packaged with the app. The file
+// contains one URL per line. Returns an array of strings.
+async function loadFeedUrls(){
+  try{
+    const res = await fetch('global_security_rss_feeds.txt');
+    const text = await res.text();
+    return text.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+  }catch(err){
+    console.error('Failed to load feed list', err);
+    return [];
+  }
+}
+
+// Render checkboxes for each feed in the "Enabled feeds" UI section. The user can
+// toggle which feeds are active. This function clears the container and adds a
+// checkbox for each feed defined in State.feeds.
+function renderFeedCheckboxes(){
+  const container = byId('feedCheckboxes');
+  if(!container) return;
+  container.innerHTML = '';
+  Object.values(State.feeds).forEach(feed => {
+    const id = feed.id;
+    const label = feed.label || feed.url;
+    const div = document.createElement('div');
+    div.className = 'feed-row';
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.checked = feed.enabled;
+    chk.addEventListener('change', () => {
+      feed.enabled = chk.checked;
+    });
+    const span = document.createElement('span');
+    span.textContent = label;
+    div.appendChild(chk);
+    div.appendChild(span);
+    container.appendChild(div);
+  });
+}
+
+// Fetch all feeds that are currently enabled. For each feed we call fetchFeed().
+async function fetchAllEnabledFeeds(){
+  const feeds = Object.values(State.feeds).filter(f => f.enabled);
+  for(const f of feeds){
+    await fetchFeed(f.url);
+  }
+}
+
+// Start the polling timer using the interval specified by the user. If a timer is
+// already running it will be cleared before starting a new one.
+function startPolling(){
+  const minutes = parseInt(byId('pollInterval').value, 10);
+  if(isNaN(minutes) || minutes < 1) return;
+  // Immediately fetch once to populate the feed.
+  fetchAllEnabledFeeds();
+  if(State.pollTimer) clearInterval(State.pollTimer);
+  State.pollTimer = setInterval(() => {
+    fetchAllEnabledFeeds();
+  }, minutes * 60 * 1000);
+  setStatus(`Polling every ${minutes} minutes`);
+}
+
+// Stop the polling timer if it is running.
+function stopPolling(){
+  if(State.pollTimer){
+    clearInterval(State.pollTimer);
+    State.pollTimer = null;
+    setStatus('Polling stopped');
+  }
+}
+
+// Initialize feed management: load feed URLs, create feed objects, render the
+// checkboxes and attach event handlers for polling controls.
+async function initFeedManagement(){
+  const urls = await loadFeedUrls();
+  // Build feed objects keyed by id
+  urls.forEach((url, index) => {
+    const id = `feed-${index}`;
+    // Derive a short label from the hostname or last path segment
+    let label = '';
+    try {
+      const u = new URL(url);
+      label = u.hostname.replace(/^www\./,'');
+    } catch {
+      label = url;
+    }
+    State.feeds[id] = { id, url, enabled: true, label };
+  });
+  renderFeedCheckboxes();
+  // Attach event handlers for polling controls
+  const fetchFeedsNowBtn = byId('fetchFeedsNowBtn');
+  if(fetchFeedsNowBtn) fetchFeedsNowBtn.addEventListener('click', fetchAllEnabledFeeds);
+  const startPollingBtn = byId('startPollingBtn');
+  if(startPollingBtn) startPollingBtn.addEventListener('click', startPolling);
+  const stopPollingBtn = byId('stopPollingBtn');
+  if(stopPollingBtn) stopPollingBtn.addEventListener('click', stopPolling);
+}
 
 /** -----------------------------------------------------
  * Global State
@@ -84,17 +236,17 @@ const State = {
     clusters: {
       events: null
     },
-    // Default basemap is satellite imagery.  The user can still change this via the selector.
     basemap: 'sat'
   },
   timers: {
-    simulation: null,
-    // Polling interval timer for fetching live feeds
-    polling: null
-  },
-  // Feed definitions (populated in initFeedManagement)
-  feeds: []
+    simulation: null
+  }
 };
+
+// Initialize feed and polling containers on the State object. These properties
+// are defined here because the State object must exist before assignment.
+State.feeds = {};
+State.pollTimer = null;
 
 // Theme init
 document.body.classList.toggle('dark', State.theme === 'dark');
@@ -492,124 +644,138 @@ function postIngest(){
 }
 
 async function fetchFeed(url){
-  setStatus('Fetching feed ...');
-  // Attempt raw fetch. Many RSS endpoints will block via CORS.
-  const res = await fetch(url);
-  const text = await res.text();
-  // Try JSON first
+  // Fetch a feed at the given URL, passing through the CORS proxy to avoid cross-
+  // origin errors in the browser. After downloading the feed we attempt to parse
+  // JSON or RSS. For RSS we extract geolocation tags or derive coordinates from
+  // the item content using heuristic functions. Feed items with no meaningful
+  // location data will be dropped.
+  if(!url) return;
+  setStatus(`Fetching feed: ${url}`);
+  // Use the proxy prefix to bypass CORS. If the URL already appears proxied,
+  // avoid double-prepending.
+  let fetchUrl = url;
+  if(!url.startsWith(FEED_PROXY_PREFIX)){
+    fetchUrl = FEED_PROXY_PREFIX + encodeURIComponent(url);
+  }
+  let text = '';
+  try{
+    const res = await fetch(fetchUrl);
+    text = await res.text();
+  }catch(err){
+    console.error('Fetch failed', err);
+    setStatus(`Fetch failed for ${url}`);
+    return;
+  }
+  // Try JSON first: some endpoints may return arrays of events.
   try{
     const obj = JSON.parse(text);
     if(Array.isArray(obj)){
       addEvents(obj);
+      postIngest();
+      return;
     } else if(Array.isArray(obj.events)){
       addEvents(obj.events);
+      postIngest();
+      return;
     }
-    postIngest();
-    return;
   }catch{}
-  // Try simple RSS parse for a few tags
+  // Parse as RSS/Atom. Use DOMParser to extract <item> or <entry> tags.
   const parser = new DOMParser();
   const xml = parser.parseFromString(text, 'text/xml');
-  const items = Array.from(xml.querySelectorAll('item'));
-  const rssEvents = items.map((it, idx) => ({
-    id: `rss-${Date.now()}-${idx}`,
-    title: it.querySelector('title')?.textContent || 'RSS item',
-    category: it.querySelector('category')?.textContent || 'RSS',
-    severity: 2,
-    lat: 0, lon: 0,
-    country: '',
-    source: (new URL(url)).hostname,
-    link: it.querySelector('link')?.textContent || url,
-    timestamp: it.querySelector('pubDate')?.textContent || new Date().toISOString()
-  }));
-  addEvents(rssEvents);
-  postIngest();
-}
-
-/* Feed polling and management ---------------------------------------------------
- * The following helpers allow the app to pull multiple RSS/JSON feeds
- * automatically.  Each feed defined in FEED_URLS is represented on State.feeds
- * with an enabled flag so that users can toggle ingestion on/off.  Polling can
- * be scheduled at a user-defined interval via the controls in the Ingest panel.
- */
-
-// Initialize feed definitions and render the checkbox list.  This should be
-// called once during boot() after the DOM is ready.
-function initFeedManagement(){
-  State.feeds = FEED_URLS.map(url => ({ url, enabled: true }));
-  renderFeedCheckboxes();
-}
-
-// Render the list of feed toggles.  Each feed is displayed with a checkbox
-// labelled by its hostname.  When a checkbox is toggled the feed's enabled
-// property is updated.
-function renderFeedCheckboxes(){
-  const container = byId('feedCheckboxes');
-  if(!container) return;
-  container.innerHTML = '';
-  State.feeds.forEach((feed, idx) => {
-    const id = `feedChk${idx}`;
-    const label = document.createElement('label');
-    label.style.display = 'flex';
-    label.style.alignItems = 'center';
-    const chk = document.createElement('input');
-    chk.type = 'checkbox';
-    chk.id = id;
-    chk.checked = feed.enabled;
-    chk.addEventListener('change', () => {
-      feed.enabled = chk.checked;
-    });
-    const name = document.createTextNode(' ' + (new URL(feed.url)).hostname);
-    label.appendChild(chk);
-    label.appendChild(name);
-    container.appendChild(label);
-    container.appendChild(document.createElement('br'));
-  });
-}
-
-// Fetch all currently enabled feeds once.  This helper iterates over
-// State.feeds and invokes fetchFeed() for each enabled feed.  Errors
-// encountered during an individual fetch are logged but do not abort the loop.
-async function fetchAllEnabledFeeds(){
-  for(const feed of State.feeds){
-    if(!feed.enabled) continue;
-    try{
-      await fetchFeed(feed.url);
-    }catch(err){
-      console.error('Feed fetch failed', feed.url, err);
+  const items = Array.from(xml.querySelectorAll('item, entry'));
+  const events = [];
+  items.forEach((it, idx) => {
+    const title = it.querySelector('title')?.textContent?.trim() || 'Untitled';
+    const desc  = it.querySelector('description')?.textContent?.trim() ||
+                  it.querySelector('content')?.textContent?.trim() || '';
+    let lat = 0;
+    let lon = 0;
+    // 1) georss:point
+    const pointEl = it.querySelector('georss\\:point') || it.querySelector('point');
+    if(pointEl && pointEl.textContent){
+      const parts = pointEl.textContent.trim().split(/\s+/);
+      if(parts.length >= 2){
+        const la = parseFloat(parts[0]);
+        const lo = parseFloat(parts[1]);
+        if(!Number.isNaN(la) && !Number.isNaN(lo)){
+          lat = la;
+          lon = lo;
+        }
+      }
     }
-  }
-}
-
-// Start polling all enabled feeds at the interval specified in the pollInterval
-// input (in minutes).  If polling is already active it will be restarted with
-// the new interval.  The feeds are also fetched immediately when polling
-// begins so that users see results without waiting for the first timer tick.
-function startPolling(){
-  const mins = parseFloat(byId('pollInterval').value);
-  if(!mins || mins <= 0){
-    setStatus('Enter a positive polling interval');
-    return;
-  }
-  // Stop any existing timer
-  if(State.timers.polling){
-    clearInterval(State.timers.polling);
-    State.timers.polling = null;
-  }
-  // Convert minutes to milliseconds
-  const ms = mins * 60 * 1000;
-  State.timers.polling = setInterval(fetchAllEnabledFeeds, ms);
-  setStatus(`Polling every ${mins} minute(s)`);
-  // Fire immediately
-  fetchAllEnabledFeeds();
-}
-
-// Stop the current feed polling timer if active.
-function stopPolling(){
-  if(State.timers.polling){
-    clearInterval(State.timers.polling);
-    State.timers.polling = null;
-    setStatus('Polling stopped');
+    // 2) geo:lat + geo:long
+    if(lat === 0 && lon === 0){
+      const latEl = it.querySelector('geo\\:lat') || it.querySelector('lat');
+      const lonEl = it.querySelector('geo\\:long') || it.querySelector('long');
+      if(latEl && lonEl){
+        const la = parseFloat(latEl.textContent);
+        const lo = parseFloat(lonEl.textContent);
+        if(!Number.isNaN(la) && !Number.isNaN(lo)){
+          lat = la;
+          lon = lo;
+        }
+      }
+    }
+    // 3) parse coordinates from free text
+    if(lat === 0 && lon === 0){
+      const coords = parseLatLonFromString(title + ' ' + desc);
+      if(coords){
+        lat = coords[0];
+        lon = coords[1];
+      }
+    }
+    // 4) infer country
+    let country = '';
+    if(lat === 0 && lon === 0){
+      const match = findCountryInString(title + ' ' + desc);
+      if(match){
+        country = match;
+        const cc = COUNTRY_COORDS[match];
+        lat = cc.lat;
+        lon = cc.lon;
+      }
+    }
+    // Skip if still at origin
+    if(lat === 0 && lon === 0){
+      return;
+    }
+    // Category
+    let category = '';
+    const catEl = it.querySelector('category, dc\\:subject');
+    if(catEl && catEl.textContent){
+      category = catEl.textContent.trim();
+    }
+    if(!country){
+      const match = findCountryInString(title + ' ' + desc);
+      if(match) country = match;
+    }
+    events.push({
+      id: `rss-${Date.now()}-${Math.floor(Math.random()*100000)}-${idx}`,
+      title,
+      category: category || 'RSS',
+      severity: 2,
+      lat,
+      lon,
+      country: country || '',
+      source: (() => {
+        try {
+          const u = new URL(url);
+          return u.hostname.replace(/^www\\./,'');
+        } catch {
+          return url;
+        }
+      })(),
+      link: it.querySelector('link')?.textContent || url,
+      timestamp: it.querySelector('pubDate')?.textContent ||
+                 it.querySelector('updated')?.textContent ||
+                 new Date().toISOString()
+    });
+  });
+  if(events.length > 0){
+    addEvents(events);
+    postIngest();
+  } else {
+    setStatus(`No events parsed for ${url}`);
   }
 }
 
@@ -915,15 +1081,7 @@ function wireUI(){
       setStatus('Raw JSON parse error');
     }
   });
-  // Feed polling controls
-  const fetchBtn = byId('fetchFeedsNowBtn');
-  const startBtn = byId('startPollingBtn');
-  const stopBtn = byId('stopPollingBtn');
-  if(fetchBtn) fetchBtn.addEventListener('click', () => {
-    fetchAllEnabledFeeds();
-  });
-  if(startBtn) startBtn.addEventListener('click', startPolling);
-  if(stopBtn) stopBtn.addEventListener('click', stopPolling);
+  // Note: sample and simulation buttons have been removed in the live-feed version.
 
   // Feed search
   byId('feedSearch').addEventListener('input', renderFeed);
@@ -977,9 +1135,9 @@ function boot(){
   initMap();
   // Wire UI
   wireUI();
-  // Initialize feeds and render the feed checklist
-  initFeedManagement();
-  // Build the base UI with no events loaded yet
+  // Initialize feed management (load feed list and attach polling controls)
+  initFeedManagement().catch(err => console.error(err));
+  // Initial rendering with no events. Post-ingest will update charts, map and feed.
   postIngest();
   setStatus('Ready');
 }

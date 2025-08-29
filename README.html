@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Global Security Intel Pro - Readme</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    main{max-width:980px;margin:20px auto;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px}
+    h1,h2,h3{margin-top:8px}
+    code,kbd,pre{background:rgba(0,0,0,.05);padding:2px 4px;border-radius:6px}
+  </style>
+</head>
+<body class="light">
+<header class="app-header">
+  <div class="brand">
+    <div class="logo">QA</div>
+    <div>
+      <h1>Global Security Intel Pro - Docs</h1>
+      <p>Quick start, data schemas, and deployment</p>
+    </div>
+  </div>
+</header>
+<main>
+  <h2>Quick start</h2>
+  <ol>
+    <li>Open <code>index.html</code> locally or host the folder on GitHub Pages.</li>
+    <li>Click <strong>Load Sample Data</strong> for instant exploration.</li>
+    <li>Use <strong>Ingest Data</strong> to upload JSON or CSV, or paste a JSON array of events.</li>
+    <li>Use drawing tools to create a selection. The footer shows how many filtered events fall inside.</li>
+    <li>Create incidents from feed items and export to JSON for SITREPs and ARR use.</li>
+    <li>Open the Analytics tab for severity and country distribution charts.</li>
+  </ol>
+
+  <h2>Data model</h2>
+  <p><strong>Events</strong> JSON array fields:</p>
+  <pre>[{
+  "id": "string", "title": "string", "category": "string",
+  "severity": 1, "lat": -12.3, "lon": 40.6,
+  "country": "Mozambique", "source": "ACLED", "link": "http...",
+  "timestamp": "ISO-8601 string"
+}]</pre>
+  <p><strong>Assets</strong> JSON array fields:</p>
+  <pre>[{ "id":"as-1", "name":"Maputo Warehouse", "type":"Warehouse", "lat":-25.96, "lon":32.58, "country":"Mozambique", "owner":"Quanta", "status":"active" }]</pre>
+  <p><strong>People</strong> JSON array fields:</p>
+  <pre>[{ "id":"pe-1", "name":"Field Team A", "role":"Ops", "lat":-4.34, "lon":15.28, "country":"DRC", "status":"ok" }]</pre>
+
+  <h2>CSV ingestion</h2>
+  <p>Required headers: <code>id,title,category,severity,lat,lon,country,source,link,timestamp</code>. Values are parsed with PapaParse.</p>
+
+  <h2>Feeds</h2>
+  <p>The app tries to fetch and parse the URL as JSON. If it is RSS, it attempts a simple XML parse. Some sources block in-browser fetch requests with CORS. If so, use a CORS friendly proxy or paste a JSON array in the text area and click Ingest JSON.</p>
+
+  <h2>Role-based UI</h2>
+  <p>Select a role in the sidebar to hide or show panels. Example: Executive Security hides ingestion and SOP panels.</p>
+
+  <h2>Export</h2>
+  <ul>
+    <li>Events as CSV or JSON</li>
+    <li>Incidents as JSON</li>
+    <li>SOPs as JSON</li>
+    <li>Config snapshot as JSON</li>
+  </ul>
+
+  <h2>Map designer</h2>
+  <p>Switch base map, toggle layers, and clear annotations. Draw polygons, rectangles, or circles to filter and plan tasks for a selected area.</p>
+
+  <h2>Deployment</h2>
+  <ol>
+    <li>Create a GitHub repo and push the folder contents.</li>
+    <li>Enable GitHub Pages in repo settings, set branch to <code>main</code> and root to <code>/(root)</code>.</li>
+    <li>Open your site URL and test. All libraries load from CDNs.</li>
+  </ol>
+
+  <h2>Extending</h2>
+  <ul>
+    <li>Integrate authenticated APIs for true mass notifications and comms.</li>
+    <li>Add a server worker for PWA install on mobile.</li>
+    <li>Build adapters for ACLED, Insecurity Insight, and other feeds using their official APIs or CSV exports.</li>
+    <li>Persist assets, people, and incidents in a backend or secure cloud store.</li>
+  </ul>
+
+  <p>Built for analysts and risk managers who need speed and clarity.</p>
+</main>
+</body>
+</html>
