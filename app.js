@@ -1,8 +1,62 @@
-import { SAMPLE_EVENTS, SAMPLE_ASSETS, SAMPLE_PEOPLE, MONITORED_COUNTRIES } from './data_samples.js';
+// NOTE: We no longer import any sample data or monitored country lists. All data comes from live RSS feeds.
+// The app now uses a predefined list of RSS feed URLs for ingestion. See FEED_URLS below.
+
+/*
+ * List of RSS/Atom/JSON feeds to ingest. Each entry in this array is a URL.
+ * These feeds were supplied by the user via the global_security_rss_feeds.txt file. You can
+ * modify this list to add or remove feeds as needed. The application will poll
+ * enabled feeds on a regular interval and ingest any new events into the system.
+ */
+const FEED_URLS = [
+  "https://www.thenewhumanitarian.org/rss/all.xml",
+  "https://theconversation.com/africa/articles.atom",
+  "https://reliefweb.int/updates/rss.xml?advanced-search=%28C231_C75_C220_C149_C46_C49_C102_C69_C55_C164_C216_C174_C36_C208_C54_C87_C175%29",
+  "https://www.crisisgroup.org/rss/1",
+  "https://news.un.org/feed/subscribe/en/news/region/africa/feed/rss.xml",
+  "https://www.rand.org/pubs/articles.xml",
+  "https://www.msf.org/rss/all",
+  "https://www.africom.mil/syndication-feed/rss/press-releases",
+  "https://travel.state.gov/_res/rss/TAsTWs.xml",
+  "https://www.rusi.org/rss/latest-publications.xml",
+  "https://www.nato.int/cps/rss/en/natohq/rssFeed.xsl/rssFeed.xml",
+  "https://www.bellingcat.com/feed/",
+  "https://www.icij.org/feed/",
+  "https://reliefweb.int/updates/rss.xml",
+  "https://www.unodc.org/unodc/feed/stories.xml",
+  "https://www.gdacs.org/xml/rss.xml",
+  "https://www.unodc.org/unodc/feed/press-releases.xml",
+  "https://reliefweb.int/updates/rss.xml?view=headlines",
+  "https://www.unodc.org/unodc/feed/publications.xml",
+  "https://www.chathamhouse.org/path/news-releases.xml",
+  "https://www.cisa.gov/cybersecurity-advisories/all.xml",
+  "https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=2&Site=945&max=10",
+  "https://www.google.com/alerts/feeds/09678322071861326813/15478561615984895730",
+  "https://www.google.com/alerts/feeds/09678322071861326813/17729077320378208369",
+  "https://www.google.com/alerts/feeds/09678322071861326813/10382831314055122160",
+  "https://www.google.com/alerts/feeds/09678322071861326813/3724071121715750608",
+  "https://www.google.com/alerts/feeds/09678322071861326813/16059299224477972089",
+  "https://www.google.com/alerts/feeds/09678322071861326813/1198605801377290022",
+  "https://www.google.com/alerts/feeds/09678322071861326813/3174126178415816884",
+  "https://www.google.com/alerts/feeds/09678322071861326813/10778257038356429766",
+  "https://www.google.com/alerts/feeds/09678322071861326813/13907740799062403631",
+  "https://www.google.com/alerts/feeds/09678322071861326813/13583311032613923135",
+  "https://www.google.com/alerts/feeds/09678322071861326813/3377241513725216927",
+  "https://www.google.com/alerts/feeds/09678322071861326813/15536018237517902097",
+  "https://www.google.com/alerts/feeds/09678322071861326813/6761969864493492596",
+  "https://www.google.com/alerts/feeds/09678322071861326813/8525308065649173498",
+  "https://www.google.com/alerts/feeds/09678322071861326813/9404830783107472102",
+  "https://www.google.com/alerts/feeds/09678322071861326813/15223369397218074172",
+  "https://www.google.com/alerts/feeds/09678322071861326813/13089685840883809940",
+  "https://www.google.com/alerts/feeds/09678322071861326813/6461275839714976954",
+  "https://www.google.com/alerts/feeds/09678322071861326813/1777354198294681489"
+];
 
 /** -----------------------------------------------------
  * Global State
  * ----------------------------------------------------- */
+// Default monitored country list is empty; populate this if you have a fixed list of countries to always include.
+const MONITORED_COUNTRIES = [];
+
 const State = {
   theme: localStorage.getItem('qa_theme') || 'light',
   role: 'all',
@@ -39,8 +93,12 @@ const State = {
     basemap: 'osm'
   },
   timers: {
-    simulation: null
-  }
+    simulation: null,
+    // Interval ID for RSS polling. Set when startPolling() is called and cleared by stopPolling().
+    polling: null
+  },
+  // List of feed objects: { url: string, enabled: boolean }. Populated in initFeedManagement().
+  feeds: []
 };
 
 // Theme init
@@ -91,6 +149,83 @@ function keywordMatch(s, kw){
 function getCountriesFromData(){
   const set = new Set([...State.events.map(e=>e.country), ...State.assets.map(a=>a.country), ...State.people.map(p=>p.country)]);
   return Array.from(set).filter(Boolean).sort();
+}
+
+/** -----------------------------------------------------
+ * Feed management
+ * ----------------------------------------------------- */
+// Initialize the feed list from FEED_URLS and render the checkboxes in the UI.  Each feed is
+// enabled by default.  Call this after the DOM is ready in boot().
+function initFeedManagement(){
+  State.feeds = FEED_URLS.map(url => ({ url, enabled: true }));
+  renderFeedCheckboxes();
+}
+
+// Render feed enable/disable checkboxes in the panel.  Requires an element with id
+// 'feedCheckboxes' in the HTML.
+function renderFeedCheckboxes(){
+  const container = byId('feedCheckboxes');
+  if(!container) return;
+  container.innerHTML = '';
+  State.feeds.forEach((feed, idx) => {
+    const id = `feedCheck-${idx}`;
+    const row = document.createElement('div');
+    row.className = 'row';
+    // shorten long URLs for display
+    const display = feed.url.replace(/https?:\/\//, '').slice(0, 40);
+    row.innerHTML = `<label><input type="checkbox" id="${id}" ${feed.enabled ? 'checked' : ''}> ${display}</label>`;
+    container.appendChild(row);
+    const cb = document.getElementById(id);
+    if(cb){
+      cb.addEventListener('change', (e) => {
+        feed.enabled = e.target.checked;
+      });
+    }
+  });
+}
+
+// Fetch and ingest all enabled feeds once.  After ingestion, update map, feed list,
+// charts, and status.  If no feeds are enabled, nothing happens.
+async function fetchAllEnabledFeeds(){
+  const enabledFeeds = State.feeds.filter(f => f.enabled);
+  if(enabledFeeds.length === 0){
+    setStatus('No feeds enabled');
+    return;
+  }
+  setStatus(`Fetching ${enabledFeeds.length} feeds ...`);
+  for(const feed of enabledFeeds){
+    try{
+      await fetchFeed(feed.url);
+    }catch(err){
+      console.error('Feed fetch error', feed.url, err);
+    }
+  }
+  // Re-render after batch ingestion
+  renderMapLayers();
+  renderFeed();
+  renderCharts();
+  setStatus(`Fetched ${enabledFeeds.length} feeds`);
+}
+
+// Start periodic polling based on the interval (in minutes) set in the UI.  Clears
+// any existing polling timer.  Polls immediately once then on each interval.
+function startPolling(){
+  const val = byId('pollInterval') ? Number(byId('pollInterval').value) : 5;
+  const minutes = isNaN(val) || val <= 0 ? 5 : val;
+  stopPolling();
+  // Immediately fetch all feeds
+  fetchAllEnabledFeeds();
+  State.timers.polling = setInterval(fetchAllEnabledFeeds, minutes * 60 * 1000);
+  setStatus(`Polling every ${minutes} minutes`);
+}
+
+// Stop the current polling interval if any.
+function stopPolling(){
+  if(State.timers.polling){
+    clearInterval(State.timers.polling);
+    State.timers.polling = null;
+    setStatus('Polling stopped');
+  }
 }
 
 /** -----------------------------------------------------
@@ -775,21 +910,33 @@ function wireUI(){
       setStatus('Raw JSON parse error');
     }
   });
-  byId('loadSamplesBtn').addEventListener('click', () => {
-    addEvents(SAMPLE_EVENTS);
-    addAssets(SAMPLE_ASSETS);
-    addPeople(SAMPLE_PEOPLE);
-    postIngest();
-  });
-  byId('simulateFeedBtn').addEventListener('click', () => {
-    if(State.timers.simulation){
-      stopSimulation();
-      byId('simulateFeedBtn').textContent = 'Start Simulated Feed';
-    } else {
-      startSimulation();
-      byId('simulateFeedBtn').textContent = 'Stop Simulated Feed';
-    }
-  });
+  // Sample and simulation buttons have been removed from the UI.  Guard against missing elements.
+  const loadSamplesBtn = byId('loadSamplesBtn');
+  if(loadSamplesBtn){
+    loadSamplesBtn.addEventListener('click', () => {
+      console.warn('Sample data loading is disabled in this build');
+    });
+  }
+  const simulateBtn = byId('simulateFeedBtn');
+  if(simulateBtn){
+    simulateBtn.addEventListener('click', () => {
+      console.warn('Simulated feed has been removed in this build');
+    });
+  }
+
+  // Polling controls for RSS feeds
+  const fetchFeedsBtn = byId('fetchFeedsNowBtn');
+  if(fetchFeedsBtn){
+    fetchFeedsBtn.addEventListener('click', fetchAllEnabledFeeds);
+  }
+  const startPollBtn = byId('startPollingBtn');
+  if(startPollBtn){
+    startPollBtn.addEventListener('click', startPolling);
+  }
+  const stopPollBtn = byId('stopPollingBtn');
+  if(stopPollBtn){
+    stopPollBtn.addEventListener('click', stopPolling);
+  }
 
   // Feed search
   byId('feedSearch').addEventListener('input', renderFeed);
@@ -843,10 +990,9 @@ function boot(){
   initMap();
   // Wire UI
   wireUI();
-  // Preload samples
-  addEvents(SAMPLE_EVENTS);
-  addAssets(SAMPLE_ASSETS);
-  addPeople(SAMPLE_PEOPLE);
+  // Initialize feed management and populate the feed checkbox list
+  initFeedManagement();
+  // No sample data is preloaded in this build.  Prepare the map and charts with empty data
   postIngest();
   setStatus('Ready');
 }
