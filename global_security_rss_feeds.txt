@@ -7,6 +7,7 @@ https://www.rand.org/pubs/articles.xml
 https://www.msf.org/rss/all
 https://www.africom.mil/syndication-feed/rss/press-releases
 https://travel.state.gov/_res/rss/TAsTWs.xml
+https://www.africanews.com/feed/
 https://www.rusi.org/rss/latest-publications.xml
 https://www.nato.int/cps/rss/en/natohq/rssFeed.xsl/rssFeed.xml
 https://www.bellingcat.com/feed/
@@ -38,4 +39,5 @@ https://www.google.com/alerts/feeds/09678322071861326813/9404830783107472102
 https://www.google.com/alerts/feeds/09678322071861326813/15223369397218074172
 https://www.google.com/alerts/feeds/09678322071861326813/13089685840883809940
 https://www.google.com/alerts/feeds/09678322071861326813/6461275839714976954
+
 https://www.google.com/alerts/feeds/09678322071861326813/1777354198294681489
